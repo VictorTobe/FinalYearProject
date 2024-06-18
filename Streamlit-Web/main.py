@@ -9,12 +9,12 @@ from streamlit_folium import folium_static
 # Load the pre-trained model using joblib
 @st.cache_resource
 def load_model():
-    return joblib.load('../notebooks/gradient_boosting_model.joblib')
+    return joblib.load('./gradient_boosting_model.joblib')
 
 # Load the district coordinates
 @st.cache_resource
 def load_district_coordinates():
-    with open('../data/district.json', 'r') as f:
+    with open('./district.json', 'r') as f:
         return json.load(f)
 
 # Model Prediction

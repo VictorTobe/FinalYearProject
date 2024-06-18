@@ -1,0 +1,112 @@
+{
+    "1": {
+        "Latitude": 41.886018055,
+        "Longitude": -87.633937881,
+        "Name": "Central"
+    },
+    "2": {
+        "Latitude": 41.80890316,
+        "Longitude": -87.618139193,
+        "Name": "Wentworth"
+    },
+    "3": {
+        "Latitude": 41.7619185,
+        "Longitude": -87.576209245,
+        "Name": "Grand Crossing"
+    },
+    "4": {
+        "Latitude": 41.699971107,
+        "Longitude": -87.532866422,
+        "Name": "South Chicago"
+    },
+    "5": {
+        "Latitude": 41.692833841,
+        "Longitude": -87.60431945,
+        "Name": "Calumet"
+    },
+    "6": {
+        "Latitude": 41.737750767,
+        "Longitude": -87.604855911,
+        "Name": "Gresham"
+    },
+    "7": {
+        "Latitude": 41.758126171,
+        "Longitude": -87.631582508,
+        "Name": "Englewood"
+    },
+    "8": {
+        "Latitude": 41.796477414,
+        "Longitude": -87.708540915,
+        "Name": "Chicago Lawn"
+    },
+    "9": {
+        "Latitude": 41.837651929,
+        "Longitude": -87.641404086,
+        "Name": "Deering"
+    },
+    "10": {
+        "Latitude": 41.862914501,
+        "Longitude": -87.709737438,
+        "Name": "Ogden"
+    },
+    "11": {
+        "Latitude": 41.880594385,
+        "Longitude": -87.702959421,
+        "Name": "Harrison"
+    },
+    "12": {
+        "Latitude": 41.877565108,
+        "Longitude": -87.68479102,
+        "Name": "Near West"
+    },
+    "14": {
+        "Latitude": 41.91065261,
+        "Longitude": -87.66614577,
+        "Name": "Shakespeare"
+    },
+    "15": {
+        "Latitude": 41.891943951,
+        "Longitude": -87.768770463,
+        "Name": "Austin"
+    },
+    "16": {
+        "Latitude": 41.98142637,
+        "Longitude": -87.772997369,
+        "Name": "Jefferson Park"
+    },
+    "17": {
+        "Latitude": 41.943378528,
+        "Longitude": -87.7199738,
+        "Name": "Albany Park"
+    },
+    "18": {
+        "Latitude": 41.902691497,
+        "Longitude": -87.640639866,
+        "Name": "Near North"
+    },
+    "19": {
+        "Latitude": 41.952345086,
+        "Longitude": -87.677975059,
+        "Name": "Town Hall"
+    },
+    "20": {
+        "Latitude": 41.973339203,
+        "Longitude": -87.653132052,
+        "Name": "Lincoln"
+    },
+    "22": {
+        "Latitude": 41.731497731,
+        "Longitude": -87.658074565,
+        "Name": "Morgan Park"
+    },
+    "24": {
+        "Latitude": 42.013787643,
+        "Longitude": -87.673182834,
+        "Name": "Rogers Park"
+    },
+    "25": {
+        "Latitude": 41.915187259,
+        "Longitude": -87.775425225,
+        "Name": "Grand Central"
+    }
+}
