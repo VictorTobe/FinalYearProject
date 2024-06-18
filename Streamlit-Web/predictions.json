@@ -1,0 +1,127 @@
+[
+    {
+        "District": 1,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 2,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 3,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 4,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 5,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 6,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 7,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 8,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 9,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 10,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 11,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 12,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 13,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 14,
+        "Predicted Alarms": "Medium",
+        "Deployment Method": "Medium crime rate - Increased patrolling recommended."
+    },
+    {
+        "District": 15,
+        "Predicted Alarms": "Medium",
+        "Deployment Method": "Medium crime rate - Increased patrolling recommended."
+    },
+    {
+        "District": 16,
+        "Predicted Alarms": "Medium",
+        "Deployment Method": "Medium crime rate - Increased patrolling recommended."
+    },
+    {
+        "District": 17,
+        "Predicted Alarms": "Medium",
+        "Deployment Method": "Medium crime rate - Increased patrolling recommended."
+    },
+    {
+        "District": 18,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 19,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    },
+    {
+        "District": 20,
+        "Predicted Alarms": "Medium",
+        "Deployment Method": "Medium crime rate - Increased patrolling recommended."
+    },
+    {
+        "District": 21,
+        "Predicted Alarms": "Medium",
+        "Deployment Method": "Medium crime rate - Increased patrolling recommended."
+    },
+    {
+        "District": 22,
+        "Predicted Alarms": "Medium",
+        "Deployment Method": "Medium crime rate - Increased patrolling recommended."
+    },
+    {
+        "District": 23,
+        "Predicted Alarms": "Medium",
+        "Deployment Method": "Medium crime rate - Increased patrolling recommended."
+    },
+    {
+        "District": 24,
+        "Predicted Alarms": "Medium",
+        "Deployment Method": "Medium crime rate - Increased patrolling recommended."
+    },
+    {
+        "District": 25,
+        "Predicted Alarms": "High",
+        "Deployment Method": "High crime rate - Deploy maximum force."
+    }
+]

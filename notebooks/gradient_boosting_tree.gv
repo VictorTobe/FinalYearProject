@@ -1,0 +1,33 @@
+digraph Tree {
+node [shape=box, style="filled, rounded", color="black", fontname="helvetica"] ;
+edge [fontname="helvetica"] ;
+0 [label=<Hour &le; 7.5<br/>friedman_mse = 0.188<br/>samples = 33231<br/>value = -0.0>, fillcolor="#f7dac5"] ;
+1 [label=<Hour &le; 2.5<br/>friedman_mse = 0.25<br/>samples = 11049<br/>value = 0.269>, fillcolor="#f5cdb1"] ;
+0 -> 1 [labeldistance=2.5, labelangle=45, headlabel="True"] ;
+2 [label=<Hour &le; 0.5<br/>friedman_mse = 0.196<br/>samples = 4180<br/>value = 0.017>, fillcolor="#f7d9c3"] ;
+1 -> 2 ;
+3 [label=<friedman_mse = 0.023<br/>samples = 1392<br/>value = -0.806>, fillcolor="#ffffff"] ;
+2 -> 3 ;
+4 [label=<friedman_mse = 0.238<br/>samples = 2788<br/>value = 0.492>, fillcolor="#f3c3a1"] ;
+2 -> 4 ;
+5 [label=<District &le; 13.0<br/>friedman_mse = 0.22<br/>samples = 6869<br/>value = 0.422>, fillcolor="#f3c6a6"] ;
+1 -> 5 ;
+6 [label=<friedman_mse = 0.245<br/>samples = 3739<br/>value = 1.137>, fillcolor="#eda572"] ;
+5 -> 6 ;
+7 [label=<friedman_mse = 0.164<br/>samples = 3130<br/>value = 1.926>, fillcolor="#e58139"] ;
+5 -> 7 ;
+8 [label=<District &le; 13.0<br/>friedman_mse = 0.103<br/>samples = 22182<br/>value = -0.134>, fillcolor="#f9e0ce"] ;
+0 -> 8 [labeldistance=2.5, labelangle=-45, headlabel="False"] ;
+9 [label=<Hour &le; 9.5<br/>friedman_mse = 0.04<br/>samples = 12109<br/>value = -0.209>, fillcolor="#f9e3d4"] ;
+8 -> 9 ;
+10 [label=<friedman_mse = 0.112<br/>samples = 1531<br/>value = -0.434>, fillcolor="#fbeee4"] ;
+9 -> 10 ;
+11 [label=<friedman_mse = 0.028<br/>samples = 10578<br/>value = -0.786>, fillcolor="#fffefe"] ;
+9 -> 11 ;
+12 [label=<Month &le; 5.5<br/>friedman_mse = 0.165<br/>samples = 10073<br/>value = -0.043>, fillcolor="#f8dcc8"] ;
+8 -> 12 ;
+13 [label=<friedman_mse = 0.069<br/>samples = 4181<br/>value = -0.624>, fillcolor="#fdf7f2"] ;
+12 -> 13 ;
+14 [label=<friedman_mse = 0.211<br/>samples = 5892<br/>value = 0.18>, fillcolor="#f6d2b8"] ;
+12 -> 14 ;
+}

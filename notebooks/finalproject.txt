@@ -1,0 +1,1255 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Identification of Criminal Activity Hotspots using Machine Learning to aid in Effective Utilization of Police Patrolling in Cities with High Crime Rates - *Source Code Notebook*"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Source of Data\n",
+    "* [Dataset Link](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-present/ijzp-q8t2/data)\n",
+    "* All records taken from 19 Jan 2012 - 05 May 2024"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Loading the necessary libraries\n",
+    "\n",
+    "import pandas as pd\n",
+    "import sys\n",
+    "sys.path.append(\"../utils/\")\n",
+    "import matplotlib.pyplot as plt\n",
+    "import numpy as np\n",
+    "from datetime import datetime\n",
+    "import seaborn as sns\n",
+    "\n",
+    "import util_script as us"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Data Acquisition - Obtain Data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "'''Let's write code to automate the creating of our dataset'''\n",
+    "\n",
+    "DATA_PATH = \"../data/\"\n",
+    "\n",
+    "file_names = ['crimes_2019.csv','Crimes_2021.csv','Crimes_2022.csv','Crimes_2023.csv','Crimes_2024.csv']\n",
+    "file_names = [DATA_PATH + x for x in file_names]\n",
+    "\n",
+    "main_df = us.create_df(file_names)\n",
+    "orig_shape = main_df.shape\n",
+    "print(\"The Number of Crimes: \" + str(main_df.shape[0]))\n",
+    "print(\"\\nThe Columns: \" + str(main_df.shape[1]))\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Information about the main dataframe\n",
+    "main_df.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Visualizing Missing Values\n",
+    "sns.heatmap(data = main_df.isna(), yticklabels=False, cbar=False, cmap='inferno')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# To drop the rows with missing data\n",
+    "main_df = main_df.dropna()\n",
+    "main_df.isna().sum()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The above dropping of rows does not cause too much of data loss as shown below :"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Inspecting the loss of data after such cleaning\n",
+    "print(\"Data Retained after Cleaning:\",round(((main_df.shape[0]/orig_shape[0]) * 100),2),\"%\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# What are the features of our dataset?\n",
+    "print(main_df.columns)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Data Cleaning - Scrub Data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "\n",
+    "# Example time_convert function\n",
+    "def time_convert(date_str):\n",
+    "    from datetime import datetime\n",
+    "    try:\n",
+    "        return datetime.strptime(date_str, \"%m/%d/%Y %I:%M:%S %p\")\n",
+    "    except ValueError:\n",
+    "        return None  # or some default value\n",
+    "\n",
+    "# Inspect the 'Date' column for any improper data\n",
+    "print(main_df['Date'].head())\n",
+    "\n",
+    "# Clean the 'Date' column\n",
+    "main_df = main_df[main_df['Date'].notnull()]  # Remove rows where 'Date' is null\n",
+    "main_df['Date'] = main_df['Date'].apply(lambda x: x.strip() if isinstance(x, str) else x)  # Strip whitespace\n",
+    "\n",
+    "# Remove rows with empty 'Date' strings\n",
+    "main_df = main_df[main_df['Date'] != '']\n",
+    "\n",
+    "# Apply the time_convert function with additional error handling\n",
+    "main_df['Date'] = main_df['Date'].apply(time_convert)\n",
+    "\n",
+    "# Verify the transformation\n",
+    "print(main_df['Date'].head())\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "main_df = main_df[main_df['Date'].notnull()]  # Remove rows where 'Date' is null\n",
+    "main_df['Date'] = main_df['Date'].apply(lambda x: x.strip() if isinstance(x, str) else x)  # Strip whitespace\n",
+    "main_df\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\"\"\" Feature Engineering - Splitting the 'Date' feature into more suitable features for a Time-based analysis\"\"\"\n",
+    "\n",
+    "# Feature Engineering 1 : Month\n",
+    "def month_col(x):\n",
+    "    return int(x.strftime(\"%m\"))\n",
+    "main_df['Month'] = main_df['Date'].apply(month_col)\n",
+    "\n",
+    "# Feature Engineering 2 : Day\n",
+    "def day_col(x):\n",
+    "    return int(x.strftime(\"%w\"))\n",
+    "main_df['Day'] = main_df['Date'].apply(day_col)  \n",
+    "\n",
+    "# Feature Engineering 3 : Hour\n",
+    "def hour_col(x):\n",
+    "    return int(x.strftime(\"%H\"))\n",
+    "main_df['Hour'] = main_df['Date'].apply(hour_col)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Inspect the latest version of the dataset\n",
+    "\n",
+    "main_df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Get top 10 primary crime types\n",
+    "top_10 = list(main_df['Primary Type'].value_counts().head(10).index)\n",
+    "\n",
+    "def filter_top_10(df):\n",
+    "    # Filter the DataFrame for each top crime and collect them in a list\n",
+    "    filtered_list = [df[df['Primary Type'] == crime] for crime in top_10]\n",
+    "    \n",
+    "    # Concatenate all the filtered DataFrames\n",
+    "    df2 = pd.concat(filtered_list, ignore_index=True)\n",
+    "    \n",
+    "    return df2\n",
+    "\n",
+    "# Filter the DataFrame to only include the top 10 crimes\n",
+    "df2 = filter_top_10(main_df)\n",
+    "\n",
+    "# Display the shape of the filtered DataFrame\n",
+    "df2.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "704168/883085 * 100"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**NOTE :**\n",
+    "Even though only the Top 10 crimes have been picked up from thw hole dataset, we see that we still have been able to retain 79.7% of all crime records. This shows how dominating these 10 crimes have been in th crime landscape of Chicago."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df2.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Inspecting a few relevant features\n",
+    "\n",
+    "df2[['Domestic', 'Beat', 'District', 'Ward', 'Community Area', 'FBI Code', 'Location', 'X Coordinate', 'Y Coordinate']].head()\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "<strong>What do each of the above features mean?</strong>\n",
+    "<br>\n",
+    "<ul><li><strong>Domestic :</strong> Indicates whether the incident was domestic-related as defined by the Illinois Domestic Violence Act.</li>\n",
+    "    <li><strong>Beat :</strong> Indicates the beat where the incident occurred. A beat is the smallest police geographic area – each beat has a dedicated police beat car. Three to five beats make up a police sector, and three sectors make up a police district. The Chicago Police Department has 22 police districts.</li>\n",
+    "    <li><strong>District :</strong> Indicates the police district where the incident occurred</li>\n",
+    "    <li><strong>Ward :</strong> The ward(City Council District) where the incident occurred</li>\n",
+    "    <li><strong>Community Are :</strong> Indicates the community area where the incident occurred. Chicago has 77 community areas.</li>\n",
+    "    <li><strong>FBI Code :</strong> Indicates the crime classification as outlined in the FBI's National Incident-Based Reporting System (NIBRS).</li>\n",
+    "</ul>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Grouping all these main crimes \n",
+    "\n",
+    "- First Attempt was to use all these location-type attributes given above to understand where a crime would happen</li>\n",
+    "- We have used Month, Day, District and Hour features to group crimes together</li>\n",
+    "- A *Time Point* is defined as [***month day hour***]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\"\"\" Grouping \"\"\"\n",
+    "\n",
+    "# Creating our explicit dataset\n",
+    "cri5 = df2.groupby(['Month','Day','District','Hour'], as_index=False).agg({\"Primary Type\":\"count\"})\n",
+    "cri5 = cri5.sort_values(by=['District'], ascending=False)\n",
+    "cri5.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We are not including <strong>Year</strong> because it is not of prime importance in predicting a future crime. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Renaming our feature\n",
+    "cri6=cri5.rename(index=str, columns={\"Primary Type\":\"Crime_Count\"})\n",
+    "cri6"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**A brief explanation of our cri6 dataframe :**\n",
+    "- **Month :** A given month (1 : January, 12 : December)\n",
+    "- **Day :** A given day\n",
+    "- **Distrct :** A given district\n",
+    "- **Hour :** A given hour (1 to 23)\n",
+    "- **Crime_Count :** The number of crimes that occured in the corresponding district during a given Time Point\n",
+    "\n",
+    "**cri6** will be our main dataset for all further operations"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Exploring our Data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cri6 = cri6[['Month','Day','District','Hour','Crime_Count']]\n",
+    "cri6.head()\n",
+    "print(\"The shape of our final dataset is:\", cri6.shape)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Viewing the maximum and minmum crime counts\n",
+    "print(\"Highest Crime Count at any district at any time point:\", cri6[\"Crime_Count\"].max())\n",
+    "print(\"Lowest Crime Count at any district at any time point:\", cri6[\"Crime_Count\"].min())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Average no. of crimes per ditrict per time point :\",round(cri6['Crime_Count'].sum()/cri6.shape[0], 2),\".\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Inspecting our own lower and upper bounds to make a target feature \"Alarm\"\n",
+    "\n",
+    "lower = np.mean(cri6['Crime_Count'])-0.75*np.std(cri6['Crime_Count'])\n",
+    "higher = np.mean(cri6['Crime_Count'])+0.75*np.std(cri6['Crime_Count'])\n",
+    "print(lower, higher)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Crime Count Distribution plot (We need to be using this plot in order to devise our target feature, \"Alarm\")\n",
+    "\n",
+    "plt.hist(x='Crime_Count', data=cri6,bins=90,linewidth=1,edgecolor='black', color='#163ca9')\n",
+    "#plt.title(\"Distribution of Crimes in Chicago\", fontfamily=\"Agency FB\", fontsize=25)\n",
+    "plt.xlabel(\"Crimes per month per district per hour per day\")\n",
+    "plt.ylabel(\"Number of Occurences\")\n",
+    "plt.title(\"Crime Count Distribution\")\n",
+    "plt.savefig(\"../results/plots/Distribution of crimes.png\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 0-9 : Low Crime Rate\n",
+    "# 10-23 : Medium Crime Rate\n",
+    "# 24 and above : High Crime Rate\n",
+    "\n",
+    "### The above ranges can be made better with the help of a crime analyst. As of now, we have used an intuitive way\n",
+    "### of generating classifications for our target feature; based on aproximating the distribution of the crime counts\n",
+    "### as a Normal curve\n",
+    "\n",
+    "# Feature Engineer the above dataset\n",
+    "def crime_rate_assign(x):\n",
+    "    if(x<=9):\n",
+    "        return 0\n",
+    "    elif(x>9 and x<=23):\n",
+    "        return 1\n",
+    "    else:\n",
+    "        return 2\n",
+    "cri6['Alarm'] = cri6['Crime_Count'].apply(crime_rate_assign)\n",
+    "cri6 = cri6[['Month','Day','Hour','District','Crime_Count','Alarm']]    \n",
+    "cri6.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# To store the above dataset as a csv file\n",
+    "cri6.to_csv(\"../data/Crime_Compress.csv\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cri6.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Correlation heatmap\n",
+    "\n",
+    "temp = cri6[['Month', 'Day', 'Hour', 'District', 'Alarm']]\n",
+    "sns.heatmap(temp.corr(), annot=True)\n",
+    "#plt.title(\"Checking!\", fontsize=17)\n",
+    "plt.savefig(\"../results/plots/Correlation.png\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "There is **No strong** correlation"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## How good is our generated dataset for classification?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Let's check how good our data is for classification\n",
+    "cri6['Alarm'].value_counts()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Low Crime Rate Percentage:\", round(cri6['Alarm'].value_counts()[0]/cri6['Alarm'].value_counts().sum()*100,2))\n",
+    "print(\"Medium Crime Rate Percentage:\", round(cri6['Alarm'].value_counts()[1]/cri6['Alarm'].value_counts().sum()*100,2))\n",
+    "print(\"High Crime Rate Percentage:\", round(cri6['Alarm'].value_counts()[2]/cri6['Alarm'].value_counts().sum()*100.2))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plotting the Imbalance\n",
+    "\n",
+    "x=['Low (0)','Medium (1)','High (2)']\n",
+    "y=[11856,24252,8229]\n",
+    "fig, ax = plt.subplots(figsize=(3, 4))\n",
+    "plt.bar(x,y, color=['green', 'blue', 'red'], width=0.5)\n",
+    "# plt.title('THE IMBALANCE IN THE DATASET')\n",
+    "plt.xlabel('Alarm Rate Classification')\n",
+    "plt.ylabel('Count of Crimes')\n",
+    "plt.title(\"Class Imbalance\")\n",
+    "plt.savefig(\"../results/plots/imbalance.png\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Modeling the problem as a Machine Learning Task\n",
+    "\n",
+    "##### Training Samples\n",
+    "* 75% of the 2019,2021-2024 data\n",
+    "\n",
+    "##### Testing Samples\n",
+    "1. 25% of the 2019,2021-2024 data \n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Supporting Functions"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.metrics import recall_score\n",
+    "\n",
+    "def calculate_uar(y_test, y_pred):\n",
+    "    # Compute recall for each class\n",
+    "    recalls = recall_score(y_test, y_pred, average=None)\n",
+    "\n",
+    "    # Compute UAR\n",
+    "    uar = recalls.mean()\n",
+    "    print(\"Unweighted Average Recall (UAR):\", uar)\n",
+    "    return "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## The Modelling "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Algorithm 1 : Decision Trees"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Using Decision Trees for classification \n",
+    "\n",
+    "from sklearn.tree import DecisionTreeClassifier\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn import metrics \n",
+    "from sklearn.metrics import confusion_matrix, classification_report\n",
+    "from sklearn.utils.multiclass import unique_labels\n",
+    "\n",
+    "X = cri6[['Month', 'Day', 'Hour', 'District']] # independent\n",
+    "y = cri6['Alarm'] # dependent\n",
+    "\n",
+    "# Let's split the dataset\n",
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=101) # 75:25 split\n",
+    "\n",
+    "# print(X_train)\n",
+    "# print('hi')\n",
+    "# print(X_test)\n",
+    "# Creating tree\n",
+    "d_tree = DecisionTreeClassifier(random_state=101)\n",
+    "# Fitting tree\n",
+    "d_tree = d_tree.fit(X_train, y_train)\n",
+    "# Predicting !\n",
+    "y_pred = d_tree.predict(X_test)\n",
+    "\n",
+    "# Model Evaluation\n",
+    "# print(y_test)\n",
+    "# print(y_pred)\n",
+    "\n",
+    "print(\"Accuracy:\",(metrics.accuracy_score(y_test, y_pred)*100),\"\\n\")\n",
+    "\n",
+    "# Confusion Matrix for evaluating the model\n",
+    "cm = pd.crosstab(y_test, y_pred, rownames=['Actual Alarm'], colnames=['Predicted Alarm'])\n",
+    "print(\"\\n----------Confusion Matrix------------------------------------\")\n",
+    "print(cm)\n",
+    "\n",
+    "# Classification Report\n",
+    "print(\"\\n----------Classification Report------------------------------------\")\n",
+    "print(classification_report(y_test,y_pred))\n",
+    "\n",
+    "uar = calculate_uar(y_test, y_pred)\n",
+    "\n",
+    "print(\"Unweighted Average Recall (UAR):\", uar)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Let's try with KFold cross validation\n",
+    "from sklearn.model_selection import StratifiedKFold\n",
+    "skf = StratifiedKFold(n_splits=100, shuffle=False)\n",
+    "\n",
+    "X = cri6.iloc[:,0:4].values\n",
+    "y = cri6.iloc[:,5].values\n",
+    "\n",
+    "i=1\n",
+    "scores = []\n",
+    "for train_index, test_index in skf.split(X, y):\n",
+    "    #print('{} of KFold {}'.format(i,skf.n_splits))\n",
+    "    X_train, X_test = X[train_index], X[test_index]\n",
+    "    y_train, y_test = y[train_index], y[test_index]\n",
+    "    d_tree = DecisionTreeClassifier(random_state=101)\n",
+    "    # Fitting tree\n",
+    "    d_tree = d_tree.fit(X_train, y_train)\n",
+    "    # Predicting !\n",
+    "    y_pred = d_tree.predict(X_test)\n",
+    "    \n",
+    "    # Model Evaluation\n",
+    "    # print(y_test)\n",
+    "    # print(y_pred)\n",
+    "    scores.append(metrics.accuracy_score(y_test, y_pred)*100)\n",
+    "    #print(\"Accuracy:\",(metrics.accuracy_score(y_test, y_pred)*100),\"\\n\")\n",
+    "\n",
+    "# Accuracy\n",
+    "print(\"Accuracy:\",np.mean(scores),\"\\n\")   \n",
+    "\n",
+    "# Confusion Matrix for evaluating the model\n",
+    "cm = pd.crosstab(y_test, y_pred, rownames=['Actual Alarm'], colnames=['Predicted Alarm'])\n",
+    "print(\"\\n----------Confusion Matrix------------------------------------\")\n",
+    "print(cm)\n",
+    "\n",
+    "# Classification Report\n",
+    "print(\"\\n----------Classification Report------------------------------------\")\n",
+    "print(classification_report(y_test,y_pred))\n",
+    "\n",
+    "#unweighted average recall\n",
+    "uar = calculate_uar(y_test, y_pred)\n",
+    "\n",
+    "print(\"Unweighted Average Recall (UAR):\", uar)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Algorithm 2 : Random Forest"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Using Random Forest for classification \n",
+    "\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn.preprocessing import StandardScaler\n",
+    "from sklearn.ensemble import RandomForestClassifier\n",
+    "from sklearn.metrics import confusion_matrix\n",
+    "import joblib\n",
+    "\n",
+    "X = cri6.iloc[:,0:4].values\n",
+    "y = cri6.iloc[:,5].values\n",
+    "\n",
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 101)\n",
+    "\n",
+    "#scaler = StandardScaler()\n",
+    "#X_train = scaler.fit_transform(X_train)\n",
+    "#X_test = scaler.transform(X_test)\n",
+    "\n",
+    "rf_classifier = RandomForestClassifier(n_estimators = 1000, criterion = 'entropy', random_state = 101)\n",
+    "rf_classifier.fit(X_train, y_train)\n",
+    "\n",
+    "y_pred = rf_classifier.predict(X_test)\n",
+    "\n",
+    "print(\"Accuracy:\",(metrics.accuracy_score(y_test, y_pred)*100),\"\\n\")\n",
+    "\n",
+    "cm = pd.crosstab(y_test, y_pred, rownames=['Actual Alarm'], colnames=['Predicted Alarm'])\n",
+    "print(\"\\n----------Confusion Matrix------------------------------------\")\n",
+    "print(cm)\n",
+    "\n",
+    "# Classification Report\n",
+    "print(\"\\n----------Classification Report------------------------------------\")\n",
+    "print(classification_report(y_test,y_pred))\n",
+    "\n",
+    "#unweighted average recall\n",
+    "uar = calculate_uar(y_test, y_pred)\n",
+    "\n",
+    "print(\"Unweighted Average Recall (UAR):\", uar)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Using Random Forest for classification (using k-fold)\n",
+    "\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn.preprocessing import StandardScaler\n",
+    "from sklearn.ensemble import RandomForestClassifier\n",
+    "from sklearn.metrics import confusion_matrix\n",
+    "import joblib\n",
+    "\n",
+    "X = cri6.iloc[:,0:4].values\n",
+    "y = cri6.iloc[:,5].values\n",
+    "\n",
+    "scores = []\n",
+    "for train_index, test_index in skf.split(X, y):\n",
+    "    #print('{} of KFold {}'.format(i,skf.n_splits))\n",
+    "    X_train, X_test = X[train_index], X[test_index]\n",
+    "    y_train, y_test = y[train_index], y[test_index]\n",
+    "    classifier = RandomForestClassifier(n_estimators = 100, criterion = 'entropy', random_state = 101)\n",
+    "    classifier.fit(X_train, y_train)\n",
+    "\n",
+    "    y_pred = classifier.predict(X_test)\n",
+    "    \n",
+    "    # Model Evaluation\n",
+    "    # print(y_test)\n",
+    "    # print(y_pred)\n",
+    "    scores.append(metrics.accuracy_score(y_test, y_pred)*100)\n",
+    "    #print(\"Accuracy:\",(metrics.accuracy_score(y_test, y_pred)*100),\"\\n\")\n",
+    "\n",
+    "#scaler = StandardScaler()\n",
+    "#X_train = scaler.fit_transform(X_train)\n",
+    "#X_test = scaler.transform(X_test)\n",
+    "\n",
+    "# Accuracy\n",
+    "print(\"Accuracy:\",np.mean(scores),\"\\n\") \n",
+    "\n",
+    "cm = pd.crosstab(y_test, y_pred, rownames=['Actual Alarm'], colnames=['Predicted Alarm'])\n",
+    "print(\"\\n----------Confusion Matrix------------------------------------\")\n",
+    "print(cm)\n",
+    "\n",
+    "# Classification Report\n",
+    "print(\"\\n----------Classification Report------------------------------------\")\n",
+    "print(classification_report(y_test,y_pred))\n",
+    "\n",
+    "#unweighted average recall\n",
+    "uar = calculate_uar(y_test, y_pred)\n",
+    "\n",
+    "print(\"Unweighted Average Recall (UAR):\", uar)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Algorithm 3 : KNN Classifier"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# KNN Classifier\n",
+    "from sklearn.neighbors import KNeighborsClassifier\n",
+    "from sklearn import metrics\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "\n",
+    "X = cri6.iloc[:,0:4].values\n",
+    "y = cri6.iloc[:,5].values\n",
+    "\n",
+    "# Let's split the dataset\n",
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=1) # 75:25 split\n",
+    "\n",
+    "'''We need to decide the optimal value for k. So, let us do that.'''\n",
+    "k_vals = range(1,30)\n",
+    "acc = []\n",
+    "for k in k_vals:\n",
+    "    knn = KNeighborsClassifier(n_neighbors = k)\n",
+    "    knn.fit(X_train, y_train)\n",
+    "    y_pred = knn.predict(X_test)\n",
+    "    acc.append(metrics.accuracy_score(y_test, y_pred))\n",
+    "# plot the graph\n",
+    "plt.plot(k_vals,acc)\n",
+    "plt.xlabel('Value of k')\n",
+    "plt.ylabel('Accuracy')\n",
+    "plt.title('Choosing k value for KNN Algorithm')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# KNN Classifier\n",
+    "from sklearn.neighbors import KNeighborsClassifier\n",
+    "from sklearn import metrics\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "\n",
+    "X = cri6.iloc[:,0:4].values\n",
+    "y = cri6.iloc[:,5].values\n",
+    "\n",
+    "# Let's split the dataset\n",
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=101) # 75:25 split\n",
+    "\n",
+    "# Choosing k as 5 (Seems to be the best value)\n",
+    "knn1 = KNeighborsClassifier(n_neighbors = 5)\n",
+    "knn1.fit(X_train, y_train)\n",
+    "y_pred = knn1.predict(X_test)\n",
+    "\n",
+    "# Model Evaluation\n",
+    "# print(y_test)\n",
+    "# print(y_pred)\n",
+    "print('KNN Classifier on the imbalanced dataset itself')\n",
+    "print(\"Accuracy:\",(metrics.accuracy_score(y_test, y_pred)*100),\"\\n\")\n",
+    "\n",
+    "# Confusion Matrix for evaluating the model\n",
+    "cm = pd.crosstab(y_test, y_pred, rownames=['Actual Alarm'], colnames=['Predicted Alarm'])\n",
+    "print(\"\\n----------Confusion Matrix------------------------------------\")\n",
+    "print(cm)\n",
+    "\n",
+    "# Classification Report\n",
+    "print(\"\\n----------Classification Report------------------------------------\")\n",
+    "print(classification_report(y_test,y_pred))\n",
+    "\n",
+    "#unweighted average recall\n",
+    "uar = calculate_uar(y_test, y_pred)\n",
+    "\n",
+    "print(\"Unweighted Average Recall (UAR):\", uar)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "'''KNN Classifier on itself - Using k-fold validation'''\n",
+    "# KNN Classifier\n",
+    "from sklearn.neighbors import KNeighborsClassifier\n",
+    "from sklearn import metrics\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "\n",
+    "X = cri6.iloc[:,0:4].values\n",
+    "y = cri6.iloc[:,5].values\n",
+    "\n",
+    "scores = []\n",
+    "for train_index, test_index in skf.split(X, y):\n",
+    "    #print('{} of KFold {}'.format(i,skf.n_splits))\n",
+    "    X_train, X_test = X[train_index], X[test_index]\n",
+    "    y_train, y_test = y[train_index], y[test_index]\n",
+    "    # Choosing k as 5 (Seems to be the best value)\n",
+    "    knn = KNeighborsClassifier(n_neighbors = 5)\n",
+    "    knn.fit(X_train, y_train)\n",
+    "    y_pred = knn.predict(X_test)\n",
+    "    # Model Evaluation\n",
+    "    # print(y_test)\n",
+    "    # print(y_pred)\n",
+    "    scores.append(metrics.accuracy_score(y_test, y_pred)*100)\n",
+    "    #print(\"Accuracy:\",(metrics.accuracy_score(y_test, y_pred)*100),\"\\n\")\n",
+    "\n",
+    "\n",
+    "# Model Evaluation\n",
+    "# print(y_test)\n",
+    "# print(y_pred)\n",
+    "print('KNN Classifier on the imbalanced dataset itself')\n",
+    "print(\"Accuracy:\",(np.mean(scores)),\"\\n\")\n",
+    "\n",
+    "# Confusion Matrix for evaluating the model\n",
+    "cm = pd.crosstab(y_test, y_pred, rownames=['Actual Alarm'], colnames=['Predicted Alarm'])\n",
+    "print(\"\\n----------Confusion Matrix------------------------------------\")\n",
+    "print(cm)\n",
+    "\n",
+    "# Classification Report\n",
+    "print(\"\\n----------Classification Report------------------------------------\")\n",
+    "print(classification_report(y_test,y_pred))\n",
+    "\n",
+    "#unweighted average recall\n",
+    "uar = calculate_uar(y_test, y_pred)\n",
+    "print(\"Unweighted Average Recall (UAR):\", uar)\n",
+    "\n",
+    "##################################################################################################\n",
+    "\n",
+    "'''KNN Classifier on the upsampled dataset'''\n",
+    "X = cri6_upsampled.iloc[:,0:4].values\n",
+    "y = cri6_upsampled.iloc[:,5].values\n",
+    "\n",
+    "scores = []\n",
+    "for train_index, test_index in skf.split(X, y):\n",
+    "    #print('{} of KFold {}'.format(i,skf.n_splits))\n",
+    "    X_train, X_test = X[train_index], X[test_index]\n",
+    "    y_train, y_test = y[train_index], y[test_index]\n",
+    "    # Choosing k as 5 (Seems to be the best value)\n",
+    "    knn = KNeighborsClassifier(n_neighbors = 5)\n",
+    "    knn.fit(X_train, y_train)\n",
+    "    y_pred = knn.predict(X_test)\n",
+    "    # Model Evaluation\n",
+    "    # print(y_test)\n",
+    "    # print(y_pred)\n",
+    "    scores.append(metrics.accuracy_score(y_test, y_pred)*100)\n",
+    "    #print(\"Accuracy:\",(metrics.accuracy_score(y_test, y_pred)*100),\"\\n\")\n",
+    "\n",
+    "# Model Evaluation\n",
+    "# print(y_test)\n",
+    "# print(y_pred)\n",
+    "print('\\n\\nKNN Classifier on the upsampled dataset')\n",
+    "print(\"Accuracy:\",(np.mean(scores)),\"\\n\")\n",
+    "\n",
+    "# Confusion Matrix for evaluating the model\n",
+    "cm = pd.crosstab(y_test, y_pred, rownames=['Actual Alarm'], colnames=['Predicted Alarm'])\n",
+    "print(\"\\n----------Confusion Matrix------------------------------------\")\n",
+    "print(cm)\n",
+    "\n",
+    "# Classification Report\n",
+    "print(\"\\n----------Classification Report------------------------------------\")\n",
+    "print(classification_report(y_test,y_pred))\n",
+    "\n",
+    "#unweighted average recall\n",
+    "uar = calculate_uar(y_test, y_pred)\n",
+    "print(\"Unweighted Average Recall (UAR):\", uar)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "SVM : https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Algorithm 4 : SVM"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn import svm, metrics\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "import pandas as pd\n",
+    "\n",
+    "# Assuming cri6 is already created and loaded with data\n",
+    "# Balanced dataset with oversampling\n",
+    "X = cri6.iloc[:, 0:4].values\n",
+    "y = cri6.iloc[:, 5].values\n",
+    "\n",
+    "# Split dataset into training set and test set\n",
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=101)  # 75:25 split\n",
+    "\n",
+    "# Create an SVM classifier with a linear kernel\n",
+    "clf = svm.SVC(kernel='linear')\n",
+    "\n",
+    "# Train the model using the training sets\n",
+    "clf.fit(X_train, y_train)\n",
+    "\n",
+    "# Predict the response for the test dataset\n",
+    "y_pred = clf.predict(X_test)\n",
+    "\n",
+    "# Model Evaluation\n",
+    "print(\"SVM with oversampled balanced dataset\")\n",
+    "print(\"Accuracy:\", metrics.accuracy_score(y_test, y_pred) * 100, \"\\n\")\n",
+    "\n",
+    "# Confusion Matrix for evaluating the model\n",
+    "labels = sorted(list(set(y_test) | set(y_pred)))  # Ensure all labels are included\n",
+    "cm = pd.crosstab(y_test, y_pred, rownames=['Actual Alarm'], colnames=['Predicted Alarm'], dropna=False, margins=True)\n",
+    "\n",
+    "print(\"\\n----------Confusion Matrix------------------------------------\")\n",
+    "print(cm)\n",
+    "\n",
+    "# Classification Report\n",
+    "print(\"\\n----------Classification Report------------------------------------\")\n",
+    "print(metrics.classification_report(y_test, y_pred))\n",
+    "\n",
+    "# Unweighted Average Recall (UAR)\n",
+    "uar = 0\n",
+    "for label in labels:\n",
+    "    if label in cm.index and label in cm.columns:\n",
+    "        uar += cm.at[label, label] / cm.loc[:, label].sum()\n",
+    "uar /= len(labels)\n",
+    "\n",
+    "print(\"\\nUAR ->\", uar)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Algorithm 5 : Logistic Regression"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Logistic Regression \n",
+    "from sklearn.linear_model import LogisticRegression\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn import metrics\n",
+    "import numpy as np\n",
+    "\n",
+    "X = cri6.iloc[:,0:4].values\n",
+    "y = cri6.iloc[:,5].values\n",
+    "\n",
+    "# Split dataset into training set and test set\n",
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=101) # 75:25 split\n",
+    "\n",
+    "logreg = LogisticRegression(C=1e5, solver='lbfgs', multi_class='multinomial')\n",
+    "\n",
+    "# Create an instance of Logistic Regression Classifier and fit the data.\n",
+    "logreg.fit(X_train, y_train)\n",
+    "\n",
+    "# Predict the response for test dataset\n",
+    "y_pred = logreg.predict(X_test)\n",
+    "\n",
+    "# Model Evaluation\n",
+    "print(\"Logistic Regression with imbalanced dataset\")\n",
+    "print(\"Accuracy:\", (metrics.accuracy_score(y_test, y_pred) * 100), \"\\n\")\n",
+    "\n",
+    "# Confusion Matrix for evaluating the model\n",
+    "cm = confusion_matrix(y_test, y_pred)\n",
+    "\n",
+    "print(\"\\n----------Confusion Matrix------------------------------------\")\n",
+    "print(pd.DataFrame(cm, index=['Actual Alarm 0', 'Actual Alarm 1', 'Actual Alarm 2'],\n",
+    "                   columns=['Predicted Alarm 0', 'Predicted Alarm 1', 'Predicted Alarm 2']))\n",
+    "\n",
+    "# Classification Report\n",
+    "print(\"\\n----------Classification Report------------------------------------\")\n",
+    "print(classification_report(y_test, y_pred))\n",
+    "\n",
+    "# Unweighted Average Recall (UAR)\n",
+    "recall_per_class = []\n",
+    "for i in range(len(cm)):\n",
+    "    recall = cm[i, i] / cm[i].sum()\n",
+    "    recall_per_class.append(recall)\n",
+    "\n",
+    "uar = np.mean(recall_per_class)\n",
+    "print(\"\\nUAR ->\", uar)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Logistic Regression (k fold)\n",
+    "from sklearn.linear_model import LogisticRegression\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn import metrics\n",
+    "\n",
+    "X = cri6.iloc[:,0:4].values\n",
+    "y = cri6.iloc[:,5].values\n",
+    "\n",
+    "scores = []\n",
+    "for train_index, test_index in skf.split(X, y):\n",
+    "    #print('{} of KFold {}'.format(i,skf.n_splits))\n",
+    "    X_train, X_test = X[train_index], X[test_index]\n",
+    "    y_train, y_test = y[train_index], y[test_index]\n",
+    "    # Choosing k as 5 (Seems to be the best value)\n",
+    "    logreg = LogisticRegression(C=1e5, solver='lbfgs', multi_class='multinomial')\n",
+    "\n",
+    "    # Create an instance of Logistic Regression Classifier and fit the data.\n",
+    "    logreg.fit(X_train, y_train)\n",
+    "\n",
+    "    #Predict the response for test dataset\n",
+    "    y_pred = logreg.predict(X_test)\n",
+    "    # Model Evaluation\n",
+    "    # print(y_test)\n",
+    "    # print(y_pred)\n",
+    "    scores.append(metrics.accuracy_score(y_test, y_pred)*100)\n",
+    "    #print(\"Accuracy:\",(metrics.accuracy_score(y_test, y_pred)*100),\"\\n\")\n",
+    "\n",
+    "# Model Evaluation\n",
+    "# print(y_test)\n",
+    "# print(y_pred)\n",
+    "print(\"Logistic Regression with imbalanced dataset\")\n",
+    "print(\"Accuracy:\",(np.mean(scores)),\"\\n\")\n",
+    "\n",
+    "# Confusion Matrix for evaluating the model\n",
+    "cm = pd.crosstab(y_test, y_pred, rownames=['Actual Alarm'], colnames=['Predicted Alarm'])\n",
+    "print(\"\\n----------Confusion Matrix------------------------------------\")\n",
+    "print(cm)\n",
+    "\n",
+    "# Classification Report\n",
+    "print(\"\\n----------Classification Report------------------------------------\")\n",
+    "print(classification_report(y_test,y_pred))\n",
+    "\n",
+    "#unweighted average recall\n",
+    "uar = calculate_uar(y_test, y_pred)\n",
+    "print(\"Unweighted Average Recall (UAR):\", uar)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Algorithm 6 : Gradient Boosting Tree"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Gradient Boosting \n",
+    "from sklearn.ensemble import GradientBoostingClassifier\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn import metrics\n",
+    "\n",
+    "X = cri6.iloc[:,0:4].values\n",
+    "y = cri6.iloc[:,5].values\n",
+    "\n",
+    "# Split dataset into training set and test set\n",
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25,random_state=1) # 75:25 split\n",
+    "\n",
+    "gbc_1 = GradientBoostingClassifier(n_estimators=1000)\n",
+    "gbc_1.fit(X_train, y_train)\n",
+    "\n",
+    "#Predict the response for test dataset\n",
+    "y_pred = gbc_1.predict(X_test)\n",
+    "\n",
+    "# Model Evaluation\n",
+    "# print(y_test)\n",
+    "# print(y_pred)\n",
+    "print(\"Gradient Boosting with imbalanced dataset\")\n",
+    "print(\"Accuracy:\",(metrics.accuracy_score(y_test, y_pred)*100),\"\\n\")\n",
+    "\n",
+    "# Confusion Matrix for evaluating the model\n",
+    "cm = pd.crosstab(y_test, y_pred, rownames=['Actual Alarm'], colnames=['Predicted Alarm'])\n",
+    "print(\"\\n----------Confusion Matrix------------------------------------\")\n",
+    "print(cm)\n",
+    "\n",
+    "# Classification Report\n",
+    "print(\"\\n----------Classification Report------------------------------------\")\n",
+    "print(classification_report(y_test,y_pred))\n",
+    "\n",
+    "#unweighted average recall\n",
+    "uar = calculate_uar(y_test, y_pred)\n",
+    "print(\"Unweighted Average Recall (UAR):\", uar)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "from sklearn.tree import export_graphviz\n",
+    "import graphviz\n",
+    "\n",
+    "# Visualize the first tree in the Gradient Boosting Classifier\n",
+    "estimator = gbc_1.estimators_[0, 0]  # The first tree of the first stage\n",
+    "dot_data = export_graphviz(estimator, feature_names=cri6.columns[0:4], filled=True, rounded=True, special_characters=True)\n",
+    "    \n",
+    "# Example rendering\n",
+    "dot = graphviz.Source(dot_data)\n",
+    "dot.render(format='png').replace('\\\\', '/')\n",
+    "dot.render(outfile='gradient_boosting_tree.svg').replace('\\\\', '/')\n",
+    "\n",
+    "\n",
+    "\n",
+    "# graph = graphviz.Source(dot_data)\n",
+    "# graph.render(\"./gradient_boosting_tree\")  # Save the visualization to a file\n",
+    "# graph.view()  # View the visualization\n",
+    "\n",
+    "dot.view()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### SAVE MODEL"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import joblib\n",
+    "\n",
+    "# Save the model to a file\n",
+    "joblib.dump(gbc_1, 'gradient_boosting_model.joblib')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
