@@ -1,1 +1,5 @@
+folium
 joblib
+numpy
+streamlit
+streamlit_folium
