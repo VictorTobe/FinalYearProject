@@ -9,12 +9,12 @@ from streamlit_folium import folium_static
 # Load the pre-trained model using joblib
 @st.cache_resource
 def load_model():
-    return joblib.load('./gradient_boosting_model.joblib')
+    return joblib.load('Streamlit-Web/gradient_boosting_model.joblib')
 
 # Load the district coordinates
 @st.cache_resource
 def load_district_coordinates():
-    with open('./district.json', 'r') as f:
+    with open('Streamlit-Web/district.json', 'r') as f:
         return json.load(f)
 
 # Model Prediction
@@ -55,7 +55,7 @@ if app_mode == 'Home':
     st.header('Crime Hotspot Prediction Project')
     st.subheader('Prediction for Effective Patrolling')
     st.text('Built By: Tobenna Nwankwo, 19CK025884')
-    image_path = 'NPF.jpg'
+    image_path = 'Streamlit-Web/NPF.jpg'
     st.image(image_path)
 
 # About Project
