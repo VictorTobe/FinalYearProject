@@ -85,21 +85,19 @@ elif app_mode == 'About Project':
 # Crime Hotspot Prediction Page
 elif app_mode == 'Hotspot Prediction':
     st.header('Crime Hotspot Prediction')
-
+    
     # Load district coordinates
     district_coordinates = load_district_coordinates()
-
-    # Create an expander for input fields
-    with st.expander("Enter Prediction Inputs", expanded=True):
-        selected_month = st.selectbox('Month', list(month_names.keys()))
-        month = month_names[selected_month]
-        selected_day = st.selectbox('Day', list(day_name.keys()))
-        day = day_name[selected_day]
-        hour = st.selectbox('Hour', list(range(0, 24)), index=4)
-        predict_button = st.button('Predict')
+    
+    # User inputs
+    selected_month = st.selectbox('Month', list(month_names.keys()))
+    month = month_names[selected_month]
+    selected_day = st.selectbox('Day', list(day_name.keys()))
+    day = day_name[selected_day]
+    hour = st.selectbox('Hour', list(range(0, 24)), index=4)
 
     # Prediction Button
-    if predict_button:
+    if st.button('Predict'):
         st.write("Model Hotspot Prediction Result:")
 
         predictions = []
@@ -153,6 +151,9 @@ elif app_mode == 'Hotspot Prediction':
         }
 
         for prediction in predictions:
+            # st.markdown(f"**District {prediction['District']}**: {prediction['Predicted Alarms']}")
+            # st.markdown(f"Deployment Method: {prediction['Deployment Method']}\n")
+
             folium.Marker(
                 location=[prediction['Latitude'], prediction['Longitude']],
                 popup=f"District {prediction['District']}: {prediction['Predicted Alarms']}\n\n {prediction['Location']}",
