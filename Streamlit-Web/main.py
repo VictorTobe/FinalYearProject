@@ -151,8 +151,8 @@ elif app_mode == 'Hotspot Prediction':
         }
 
         for prediction in predictions:
-            st.markdown(f"**District {prediction['District']}**: {prediction['Predicted Alarms']}")
-            st.markdown(f"Deployment Method: {prediction['Deployment Method']}\n")
+            # st.markdown(f"**District {prediction['District']}**: {prediction['Predicted Alarms']}")
+            # st.markdown(f"Deployment Method: {prediction['Deployment Method']}\n")
 
             folium.Marker(
                 location=[prediction['Latitude'], prediction['Longitude']],
