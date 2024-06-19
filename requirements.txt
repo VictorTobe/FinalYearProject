@@ -3,3 +3,4 @@ joblib
 numpy
 streamlit
 streamlit_folium
+scikit-learn
