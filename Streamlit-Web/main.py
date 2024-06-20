@@ -152,7 +152,7 @@ elif app_mode == 'Hotspot Prediction':
             'High': 'red'
         }
 
-         for prediction in predictions:
+        for prediction in predictions:
             st.markdown(f"**District {prediction['District']}**: {prediction['Predicted Alarms']}")
             st.markdown(f"Deployment Method: {prediction['Deployment Method']}\n")
 
